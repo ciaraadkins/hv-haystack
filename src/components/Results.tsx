@@ -100,7 +100,7 @@ export default function Results({ result }: { result: PlayResult }) {
           {items.map((r, i) => (
             <button
               key={r.imageId}
-              className={`thumb${r.correct ? "" : " missed"}${i === active ? " active" : ""}`}
+              className={i === active ? "thumb active" : "thumb"}
               onClick={() => goTo(i)}
               aria-label={`Image ${i + 1}: ${label(r)}, ${r.correct ? "right" : "missed"}`}
             >

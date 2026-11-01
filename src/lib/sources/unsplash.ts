@@ -1,3 +1,5 @@
+import { Resource } from "sst";
+import { inAws } from "../runtime";
 import type { SourceImage } from "./types";
 
 const API = "https://api.unsplash.com";
@@ -12,7 +14,8 @@ type UnsplashPhoto = {
 };
 
 function authHeaders() {
-  const key = process.env.UNSPLASH_ACCESS_KEY;
+  // Locally from .env; in AWS from the SST secret.
+  const key = inAws() ? Resource.UnsplashAccessKey.value : process.env.UNSPLASH_ACCESS_KEY;
   if (!key || key.startsWith("your_")) throw new Error("UNSPLASH_ACCESS_KEY is not set");
   return { Authorization: `Client-ID ${key}`, "Accept-Version": "v1" };
 }

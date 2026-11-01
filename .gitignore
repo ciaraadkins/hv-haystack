@@ -8,3 +8,6 @@ context/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+secrets/
+.sst/
+.open-next/

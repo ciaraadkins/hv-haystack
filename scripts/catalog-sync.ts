@@ -1,80 +1,66 @@
-// Loads images/lummi/catalog.csv into the ai_images table.
+// Syncs the hand-downloaded Lummi images in images/lummi/ into the app.
 //
-//   npm run catalog:sync
+//   npm run catalog:sync         local: copies into data/storage/, loads local Postgres
+//   npm run catalog:sync:prod    production: uploads to S3, then the CatalogSync
+//                                function loads the production database
 //
-// - Image files in images/lummi/ that aren't in the CSV yet get a new row added
-//   (with a title from the filename) so you only have to fill in the links.
+// - Image files that aren't in catalog.csv yet get a new row (title from the
+//   filename), so you only have to fill in the links and creator.
 // - Rows whose file is missing are skipped and reported.
 // - Rows removed from the CSV, or with active = no, are retired (never picked).
-// - Prints how many images are still unused, so you know when to download more.
+//
+// The local /admin page does the same thing as the local sync, one image at a time.
 
-import fs from "node:fs";
-import path from "node:path";
-import { db } from "../src/lib/db";
-import { parseCsv, toCsv } from "../src/lib/csv";
-import { CATALOG_PATH, IMAGE_EXT, LUMMI_DIR, catalogWithUsage } from "../src/lib/sources/lummi";
+import { InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
+import { Resource } from "sst";
+import type { CatalogReport } from "../src/lib/catalog";
+import {
+  addMissingRows,
+  CATALOG_PATH,
+  pushToStorage,
+  readCatalog,
+  syncLocal,
+  writeCatalog,
+  type SyncResult,
+} from "../src/lib/catalogFiles";
+import { storage } from "../src/lib/storage";
 
-const COLUMNS = ["filename", "lummi_url", "creator_name", "creator_url", "title", "active", "notes"];
-const LOW_STOCK = 14; // about a week of AI images at 1–4 per day
+const remote = process.argv.includes("--remote");
 
-fs.mkdirSync(LUMMI_DIR, { recursive: true });
-const rows = fs.existsSync(CATALOG_PATH) ? parseCsv(fs.readFileSync(CATALOG_PATH, "utf8")) : [];
-const files = new Set(fs.readdirSync(LUMMI_DIR).filter((f) => IMAGE_EXT.test(f)));
+async function syncRemote(): Promise<SyncResult> {
+  const rows = readCatalog();
+  const added = addMissingRows(rows);
+  writeCatalog(rows);
+  const uploaded = await pushToStorage(storage("s3"), rows);
 
-// New files on disk → new CSV rows.
-const listed = new Set(rows.map((r) => r.filename));
-const added = [...files].filter((f) => !listed.has(f)).sort();
-for (const filename of added) {
-  rows.push({ filename, title: path.parse(filename).name, active: "yes" });
+  const lambda = new LambdaClient({ region: "us-east-2" });
+  const res = await lambda.send(new InvokeCommand({ FunctionName: Resource.CatalogSync.name }));
+  const payload = JSON.parse(Buffer.from(res.Payload ?? []).toString("utf8") || "null");
+  if (res.FunctionError) throw new Error(`CatalogSync failed: ${JSON.stringify(payload)}`);
+  return { report: payload as CatalogReport, added, uploaded };
 }
-if (added.length > 0 || !fs.existsSync(CATALOG_PATH)) {
-  fs.writeFileSync(CATALOG_PATH, toCsv(COLUMNS, rows));
-}
 
-const isActive = (v: string | undefined) => !/^(no|false|0|n)$/i.test(v ?? "");
-const missingFile = rows.filter((r) => !files.has(r.filename));
-const valid = rows.filter((r) => files.has(r.filename));
-
-const upsert = db.prepare(`
-  INSERT INTO ai_images (filename, source, source_url, creator_name, creator_url, title, notes, active)
-  VALUES (@filename, 'lummi', @source_url, @creator_name, @creator_url, @title, @notes, @active)
-  ON CONFLICT (filename) DO UPDATE SET
-    source_url = excluded.source_url, creator_name = excluded.creator_name, creator_url = excluded.creator_url,
-    title = excluded.title, notes = excluded.notes, active = excluded.active, updated_at = datetime('now')
-`);
-
-db.transaction(() => {
-  // Anything not (validly) in the CSV is retired, not deleted, so past daily sets keep their history.
-  db.prepare("UPDATE ai_images SET active = 0, updated_at = datetime('now') WHERE source = 'lummi'").run();
-  for (const r of valid) {
-    upsert.run({
-      filename: r.filename,
-      source_url: r.lummi_url || null,
-      creator_name: r.creator_name || null,
-      creator_url: r.creator_url || null,
-      title: r.title || null,
-      notes: r.notes || null,
-      active: isActive(r.active) ? 1 : 0,
-    });
+function print({ report: r, added, uploaded }: SyncResult) {
+  console.log(`Catalog: ${CATALOG_PATH} → ${remote ? "production (S3 + RDS)" : "local"}`);
+  console.log(`  ${r.active} active images, ${r.unused} not used yet`);
+  if (added.length) console.log(`  Added ${added.length} new file(s) to the CSV: ${added.join(", ")}`);
+  if (uploaded) console.log(`  Uploaded ${uploaded} image(s) to storage`);
+  if (r.missingFile.length) console.log(`  ${r.missingFile.length} row(s) skipped, file not found: ${r.missingFile.join(", ")}`);
+  if (r.needsInfo.length) {
+    console.log(`  ${r.needsInfo.length} image(s) missing lummi_url or creator_name (fill these in for credits):`);
+    for (const f of r.needsInfo.slice(0, 10)) console.log(`    - ${f}`);
+    if (r.needsInfo.length > 10) console.log(`    …and ${r.needsInfo.length - 10} more`);
   }
-})();
+  if (r.lowStock) console.log(`  Running low: download more images (${r.unused} unused, aim for 14+).`);
+}
 
-// Report.
-const active = catalogWithUsage();
-const unused = active.filter((img) => img.times_used === 0);
-const needsInfo = valid.filter((r) => isActive(r.active) && (!r.lummi_url || !r.creator_name));
-
-console.log(`Catalog: ${CATALOG_PATH}`);
-console.log(`  ${active.length} active images, ${unused.length} not used yet`);
-if (added.length) console.log(`  Added ${added.length} new file(s) to the CSV: ${added.join(", ")}`);
-if (missingFile.length) {
-  console.log(`  ${missingFile.length} row(s) skipped, file not found: ${missingFile.map((r) => r.filename).join(", ")}`);
-}
-if (needsInfo.length) {
-  console.log(`  ${needsInfo.length} image(s) missing lummi_url or creator_name (fill these in for credits):`);
-  for (const r of needsInfo.slice(0, 10)) console.log(`    - ${r.filename}`);
-  if (needsInfo.length > 10) console.log(`    …and ${needsInfo.length - 10} more`);
-}
-if (unused.length < LOW_STOCK) {
-  console.log(`  Running low: download more images (${unused.length} unused, aim for ${LOW_STOCK}+).`);
-}
+(remote ? syncRemote() : syncLocal()).then(
+  (result) => {
+    print(result);
+    process.exit(0);
+  },
+  (err) => {
+    console.error(err.message ?? err);
+    process.exit(1);
+  },
+);

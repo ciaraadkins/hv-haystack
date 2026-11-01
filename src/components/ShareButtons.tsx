@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { downloadResultImage, shareText } from "@/lib/share";
+import { shareText } from "@/lib/share";
 import type { PlayResult } from "@/types";
 
 export default function ShareButtons({ result }: { result: PlayResult }) {
@@ -31,9 +31,6 @@ export default function ShareButtons({ result }: { result: PlayResult }) {
     <div className="stack">
       <button className="btn btn-primary" onClick={share}>
         {copied ? "Copied!" : "Share result"}
-      </button>
-      <button className="btn" onClick={() => downloadResultImage(result, window.location.origin)}>
-        Download image
       </button>
     </div>
   );

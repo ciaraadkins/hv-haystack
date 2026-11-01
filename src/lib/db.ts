@@ -1,73 +1,123 @@
-import Database from "better-sqlite3";
-import fs from "node:fs";
-import path from "node:path";
-
-const dbPath = path.resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH || "./data/app.db");
-
-// Normalized images for each daily set live next to the database.
-export const IMAGE_DIR = path.join(path.dirname(dbPath), "images");
+import { Pool, type PoolClient } from "pg";
+import { Resource } from "sst";
+import { inAws } from "./runtime";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS daily_images (
-  id          TEXT PRIMARY KEY,           -- random UUID, the only ID the browser sees
+  id          UUID PRIMARY KEY,           -- random, the only ID the browser sees
   date        TEXT NOT NULL,              -- player's local date, YYYY-MM-DD
-  position    INTEGER NOT NULL,           -- 1..5
+  position    SMALLINT NOT NULL,          -- 1..5
   source      TEXT NOT NULL,              -- 'unsplash' | 'lummi'
   source_id   TEXT NOT NULL,              -- Unsplash photo ID or Lummi filename
-  is_ai       INTEGER NOT NULL,
+  is_ai       BOOLEAN NOT NULL,
   credit_name TEXT,
   credit_url  TEXT,
   source_url  TEXT,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (date, position)
 );
 
--- The pool of AI images to draw from. Loaded from images/lummi/catalog.csv
--- by \`npm run catalog:sync\`; which days an image was used on comes from daily_images.
+-- The pool of AI images to draw from, loaded from images/lummi/catalog.csv by
+-- \`npm run catalog:sync\`. Which days an image was used on comes from daily_images.
 CREATE TABLE IF NOT EXISTS ai_images (
-  filename     TEXT PRIMARY KEY,          -- file in images/lummi/
+  filename     TEXT PRIMARY KEY,          -- object at pool/lummi/<filename> in storage
   source       TEXT NOT NULL DEFAULT 'lummi',
   source_url   TEXT,                      -- the image's page on Lummi
   creator_name TEXT,
   creator_url  TEXT,
   title        TEXT,
   notes        TEXT,
-  active       INTEGER NOT NULL DEFAULT 1, -- 0 = retired, never picked
-  added_at     TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at   TEXT
+  active       BOOLEAN NOT NULL DEFAULT true, -- false = retired, never picked
+  added_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS plays (
-  id            TEXT PRIMARY KEY,
-  player_id     TEXT NOT NULL,            -- anonymous UUID from localStorage
+  id            UUID PRIMARY KEY,
+  player_id     UUID NOT NULL,            -- anonymous ID from localStorage
   date          TEXT NOT NULL,
-  is_first_play INTEGER NOT NULL,         -- 0 for replays of the same date
-  score         INTEGER NOT NULL,
+  is_first_play BOOLEAN NOT NULL,         -- false for replays of the same date
+  score         SMALLINT NOT NULL,
   user_agent    TEXT,
-  started_at    TEXT,
-  completed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  started_at    TIMESTAMPTZ,
+  completed_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS plays_player_date ON plays (player_id, date);
 
 CREATE TABLE IF NOT EXISTS guesses (
-  play_id  TEXT NOT NULL REFERENCES plays(id),
-  image_id TEXT NOT NULL REFERENCES daily_images(id),
+  play_id  UUID NOT NULL REFERENCES plays(id),
+  image_id UUID NOT NULL REFERENCES daily_images(id),
   guess    TEXT NOT NULL,                 -- 'ai' | 'human'
-  correct  INTEGER NOT NULL,
+  correct  BOOLEAN NOT NULL,
   time_ms  INTEGER,                       -- time spent on this image before answering
   PRIMARY KEY (play_id, image_id)
 );
 `;
 
-function open() {
-  fs.mkdirSync(IMAGE_DIR, { recursive: true });
-  const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  db.exec(SCHEMA);
-  return db;
+// Locally: DATABASE_URL from .env. In AWS: the RDS instance linked by SST.
+function connectionConfig() {
+  if (!inAws()) {
+    if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set");
+    return { connectionString: process.env.DATABASE_URL };
+  }
+  const db = Resource.Database;
+  return {
+    host: db.host,
+    port: Number(db.port),
+    user: db.username,
+    password: db.password,
+    database: db.database,
+    // RDS requires SSL. Its certificate isn't in Node's default trust store, so
+    // the connection is encrypted but the certificate isn't verified.
+    ssl: { rejectUnauthorized: false },
+  };
 }
 
-// Reuse one connection across hot reloads in dev.
-const globalForDb = globalThis as unknown as { __db?: Database.Database };
-export const db = globalForDb.__db ?? (globalForDb.__db = open());
+// Created on first use (not at import) so `next build` never needs a database.
+const globalForDb = globalThis as unknown as { __pool?: Pool; __schema?: Promise<void> };
+
+function pool(): Pool {
+  return (globalForDb.__pool ??= new Pool({ ...connectionConfig(), max: 5 }));
+}
+
+// Creates the tables once per process. The advisory lock stops two cold starts
+// from racing on CREATE TABLE.
+function ready(): Promise<void> {
+  return (globalForDb.__schema ??= (async () => {
+    const client = await pool().connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(7366001)");
+      await client.query(SCHEMA);
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      globalForDb.__schema = undefined;
+      throw err;
+    } finally {
+      client.release();
+    }
+  })());
+}
+
+export async function sql<T>(text: string, params: unknown[] = []): Promise<T[]> {
+  await ready();
+  const result = await pool().query(text, params);
+  return result.rows as T[];
+}
+
+export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  await ready();
+  const client = await pool().connect();
+  try {
+    await client.query("BEGIN");
+    const out = await fn(client);
+    await client.query("COMMIT");
+    return out;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
