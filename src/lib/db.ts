@@ -17,20 +17,25 @@ CREATE TABLE IF NOT EXISTS daily_images (
   UNIQUE (date, position)
 );
 
--- The pool of AI images to draw from, loaded from images/lummi/catalog.csv by
--- \`npm run catalog:sync\`. Which days an image was used on comes from daily_images.
-CREATE TABLE IF NOT EXISTS ai_images (
-  filename     TEXT PRIMARY KEY,          -- object at pool/lummi/<filename> in storage
-  source       TEXT NOT NULL DEFAULT 'lummi',
-  source_url   TEXT,                      -- the image's page on Lummi
+-- The hand-picked images daily sets draw from: AI images from Lummi and real
+-- photos from Unsplash. Loaded from images/catalog.csv by \`npm run catalog:sync\`
+-- (or the local /admin page). Which days an image was used on comes from daily_images.
+CREATE TABLE IF NOT EXISTS pool_images (
+  source       TEXT NOT NULL,             -- 'lummi' (AI) | 'unsplash' (real)
+  filename     TEXT NOT NULL,             -- object at pool/<source>/<filename> in storage
+  is_ai        BOOLEAN NOT NULL,
+  page_url     TEXT,                      -- the image's page on Lummi / Unsplash
   creator_name TEXT,
   creator_url  TEXT,
   title        TEXT,
   notes        TEXT,
   active       BOOLEAN NOT NULL DEFAULT true, -- false = retired, never picked
   added_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at   TIMESTAMPTZ
+  updated_at   TIMESTAMPTZ,
+  PRIMARY KEY (source, filename)
 );
+-- Replaced by pool_images (AI-only, Lummi-only); its rows are reloaded from the catalog.
+DROP TABLE IF EXISTS ai_images;
 
 CREATE TABLE IF NOT EXISTS plays (
   id            UUID PRIMARY KEY,

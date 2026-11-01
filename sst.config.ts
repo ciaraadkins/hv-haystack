@@ -16,7 +16,6 @@ export default $config({
   },
   async run() {
     // ── Secrets (values set with `npx sst secret set`, never stored in git) ──
-    const unsplashKey = new sst.Secret("UnsplashAccessKey");
     const dbPassword = new sst.Secret("DbPassword");
 
     // ── Database: RDS Postgres, reachable from the internet but password + SSL protected ──
@@ -58,10 +57,10 @@ export default $config({
       },
     });
 
-    // ── Image storage: private S3 bucket (daily images + the Lummi pool) ──
+    // ── Image storage: private S3 bucket (daily images + the hand-picked pool) ──
     const images = new sst.aws.Bucket("Images");
 
-    const link = [database, images, unsplashKey];
+    const link = [database, images];
     const environment = { RUNTIME: "aws" };
 
     // ── Loads catalog.csv into the database (invoked by `npm run catalog:sync:prod`) ──

@@ -5,6 +5,7 @@
 html,
 body {
   margin: 0;
+  min-height: 100svh;
   background: #fff;
   color: #000;
   font-family: var(--font-serif), Georgia, "Times New Roman", Times, serif;
@@ -15,9 +16,15 @@ a {
   color: inherit;
 }
 
-/* One centered column, sized for phones first. */
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* One centered column, sized for phones first. Fills the screen above the footer. */
 .page {
-  min-height: 100svh;
+  flex: 1;
+  width: 100%;
   max-width: 480px;
   margin: 0 auto;
   padding: 24px 16px 40px;
@@ -357,12 +364,21 @@ p {
   font-size: 0.9rem;
 }
 
-.admin-field input[type="text"] {
+.admin-field input[type="text"],
+.admin-field select {
   font: inherit;
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
   width: 100%;
+}
+
+.admin-badge {
+  font-size: 0.75rem;
+  border: 1px solid #000;
+  border-radius: 999px;
+  padding: 1px 8px;
+  vertical-align: 2px;
 }
 
 .admin-message {
@@ -415,4 +431,55 @@ p {
     grid-template-columns: 1fr;
     gap: 4px;
   }
+}
+
+/* Footer on every page: quiet links to the legal pages and image sources. */
+.footer {
+  padding: 16px 16px 24px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #777;
+  line-height: 1.6;
+}
+
+.footer a {
+  color: #777;
+}
+
+.footer nav {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* Privacy policy and terms: plain reading layout. */
+.page:has(.legal) {
+  max-width: 680px;
+  justify-content: flex-start;
+}
+
+.legal {
+  text-align: left;
+  width: 100%;
+  line-height: 1.6;
+}
+
+.legal h1 {
+  margin-bottom: 4px;
+}
+
+.legal h2 {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 28px 0 8px;
+}
+
+.legal p,
+.legal li {
+  margin: 0 0 10px;
+}
+
+.legal ul {
+  padding-left: 20px;
+  margin: 0 0 10px;
 }

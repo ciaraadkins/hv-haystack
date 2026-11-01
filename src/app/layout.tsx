@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { PT_Serif } from "next/font/google";
+import Footer from "@/components/Footer";
 import { APP_NAME } from "@/lib/config";
 import "./globals.css";
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={ptSerif.variable}>
       <body>
         <main className="page">{children}</main>
+        <Footer />
       </body>
     </html>
   );

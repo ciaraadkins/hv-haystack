@@ -4,8 +4,7 @@ import { transaction } from "./db";
 import { storage } from "./storage";
 import { IMAGES_PER_DAY } from "./config";
 import { dailyImageKey, getExistingSet, type DailyImageRow } from "./dailySet";
-import { fetchRandomUnsplash } from "./sources/unsplash";
-import { pickLummi, shuffle } from "./sources/lummi";
+import { pickFromPool, shuffle } from "./sources/pool";
 import type { SourceImage } from "./sources/types";
 
 // Builds daily sets: picks images, normalizes them with sharp, stores them.
@@ -30,9 +29,9 @@ export async function ensureDailySet(date: string): Promise<DailyImageRow[]> {
 async function createDailySet(date: string): Promise<DailyImageRow[]> {
   // 1–4 AI images, so the split changes day to day.
   const wantedAi = 1 + Math.floor(Math.random() * (IMAGES_PER_DAY - 1));
-  // May return fewer than asked if the catalog is tiny; Unsplash fills the rest.
-  const ai = await pickLummi(wantedAi);
-  const real = await fetchRandomUnsplash(IMAGES_PER_DAY - ai.length);
+  // May return fewer than asked if the pool is tiny; the other source fills the rest.
+  const ai = await pickFromPool("lummi", wantedAi);
+  const real = await pickFromPool("unsplash", IMAGES_PER_DAY - ai.length);
   const images = shuffle<SourceImage>([...ai, ...real]);
 
   const rows: DailyImageRow[] = [];
