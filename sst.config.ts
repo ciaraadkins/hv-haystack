@@ -89,6 +89,10 @@ export default $config({
 
     // ── The website: Next.js on Lambda behind CloudFront ──
     const site = new sst.aws.Nextjs("Site", {
+      // Production lives at humanversus.tech (registered in Route 53; SST creates
+      // the HTTPS certificate and DNS records). www redirects to the bare domain.
+      domain:
+        $app.stage === "production" ? { name: "humanversus.tech", redirects: ["www.humanversus.tech"] } : undefined,
       // Linked to the builder so it can ask for a missing set on demand.
       link: [...link, dailySetBuilder],
       environment,
