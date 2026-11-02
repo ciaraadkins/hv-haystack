@@ -26,6 +26,11 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "Email": {
+      "configSet": string
+      "sender": string
+      "type": "sst.aws.Email"
+    }
     "Images": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -33,10 +38,6 @@ declare module "sst" {
     "Site": {
       "type": "sst.aws.Nextjs"
       "url": string
-    }
-    "UnsplashAccessKey": {
-      "type": "sst.sst.Secret"
-      "value": string
     }
   }
 }
