@@ -329,33 +329,62 @@ p {
   font-size: 1.5rem;
 }
 
-.slide-tag {
+/* Result banners on each image: what it was (top) and who made it (bottom). */
+.result-banner {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  background: #fff;
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.gallery-caption {
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: center;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  border-radius: 8px 8px 0 0;
 }
 
-.caption-label {
-  font-size: 1.15rem;
+.banner-human {
+  background: rgba(46, 125, 50, 0.88);
+}
+
+.banner-ai {
+  background: rgba(211, 47, 47, 0.9);
+}
+
+.banner-label {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
+}
+
+.result-banner .flag-icon {
+  color: #fff;
+}
+
+.pick-pill {
+  background: #fff;
+  color: #000;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+}
+
+.credit-banner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.8rem;
+  text-align: left;
+  border-radius: 0 0 8px 8px;
+}
+
+.credit-banner a {
+  color: #fff;
 }
 
 /* Local-only catalog admin (/admin): wider, left-aligned. */

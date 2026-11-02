@@ -46,7 +46,6 @@ export default function Results({ result }: { result: PlayResult }) {
   const { images, aiImageId, pickedImageId, correct } = result;
   // Open on the AI image, so the reveal is the first thing you see.
   const [active, setActive] = useState(Math.max(0, images.findIndex((r) => r.imageId === aiImageId)));
-  const current = images[active];
   const isPick = (r: ImageResult) => r.imageId === pickedImageId;
 
   return (
@@ -56,7 +55,7 @@ export default function Results({ result }: { result: PlayResult }) {
         <p className="muted">{formatDate(result.date)}</p>
       </header>
 
-      <p className="verdict">{correct ? "You found it." : "The AI got past you."}</p>
+      <p className="verdict">{correct ? "You found it." : "Better luck next time."}</p>
 
       <ImageGallery
         images={images.map((r) => ({ id: r.imageId, url: r.url }))}
@@ -66,7 +65,7 @@ export default function Results({ result }: { result: PlayResult }) {
         thumbLabel={(i) =>
           images[i].isAi ? (
             <>
-              <FlagIcon /> AI
+              AI <FlagIcon />
             </>
           ) : (
             "Human"
@@ -74,25 +73,26 @@ export default function Results({ result }: { result: PlayResult }) {
         }
         overlay={(i) => (
           <>
-            {images[i].isAi && (
-              <span className="slide-tag">
-                <FlagIcon /> AI
+            {/* Top banner: green for real photos, red for the AI image. */}
+            <div className={`result-banner ${images[i].isAi ? "banner-ai" : "banner-human"}`}>
+              <span className="banner-label">
+                {images[i].isAi ? (
+                  <>
+                    AI <FlagIcon />
+                  </>
+                ) : (
+                  "Human"
+                )}
               </span>
-            )}
-            {!images[i].isAi && isPick(images[i]) && <span className="slide-tag">Your pick</span>}
+              {isPick(images[i]) && <span className="pick-pill">Your pick</span>}
+            </div>
+            {/* Bottom banner: who made it. */}
+            <div className="credit-banner">
+              <Credit r={images[i]} />
+            </div>
           </>
         )}
       />
-
-      <div className="gallery-caption">
-        <p className="caption-label">
-          {current.isAi ? "The AI image" : "A real photo"}
-          {isPick(current) && <span className="muted"> · your pick</span>}
-        </p>
-        <p className="muted small">
-          <Credit r={current} />
-        </p>
-      </div>
 
       <ShareButtons result={result} />
       <p className="muted small">Come back tomorrow for a new haystack :)</p>
