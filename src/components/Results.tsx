@@ -53,7 +53,7 @@ export default function Results({ result }: { result: PlayResult }) {
         <p className="muted">{formatDate(result.date)}</p>
       </header>
 
-      <p className="verdict">{correct ? "You found it." : "Better luck next time!"}</p>
+      <p className="verdict">{correct ? "Great work!" : "Better luck next time!"}</p>
 
       <ImageGallery
         images={images.map((r) => ({ id: r.imageId, url: r.url }))}
