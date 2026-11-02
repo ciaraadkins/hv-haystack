@@ -27,8 +27,8 @@ export default function PrivacyPage() {
           storage. It isn&apos;t tied to your name, email, or device identity.
         </li>
         <li>
-          <strong>Your game.</strong> The date, which images you saw, whether you guessed AI or Human for each, how
-          long you took on each one, and your score.
+          <strong>Your game.</strong> The date, which images you saw, which one you flagged as AI, whether that was
+          right, and how long you looked at each image before deciding.
         </li>
         <li>
           <strong>Your browser type</strong> (the &quot;user agent&quot;, e.g. &quot;Safari on iPhone&quot;), so we
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
         </li>
         <li>
           To have your past games deleted, email us your player ID. You can find it in your browser&apos;s developer
-          tools under Local Storage → <code>aiornot:playerId</code>. We can&apos;t look you up any other way,
+          tools under Local Storage → <code>haystack:playerId</code>. We can&apos;t look you up any other way,
           because we don&apos;t know who you are.
         </li>
       </ul>

@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import sharp from "sharp";
 import { transaction } from "./db";
 import { storage } from "./storage";
-import { IMAGES_PER_DAY } from "./config";
+import { AI_PER_DAY, IMAGES_PER_DAY } from "./config";
 import { dailyImageKey, getExistingSet, type DailyImageRow } from "./dailySet";
 import { pickFromPool, shuffle } from "./sources/pool";
 import type { SourceImage } from "./sources/types";
@@ -27,11 +27,12 @@ export async function ensureDailySet(date: string): Promise<DailyImageRow[]> {
 }
 
 async function createDailySet(date: string): Promise<DailyImageRow[]> {
-  // 1–4 AI images, so the split changes day to day.
-  const wantedAi = 1 + Math.floor(Math.random() * (IMAGES_PER_DAY - 1));
-  // May return fewer than asked if the pool is tiny; the other source fills the rest.
-  const ai = await pickFromPool("lummi", wantedAi);
-  const real = await pickFromPool("unsplash", IMAGES_PER_DAY - ai.length);
+  // One AI image hidden among real photos.
+  const ai = await pickFromPool("lummi", AI_PER_DAY);
+  const real = await pickFromPool("unsplash", IMAGES_PER_DAY - AI_PER_DAY);
+  if (ai.length !== AI_PER_DAY || real.length !== IMAGES_PER_DAY - AI_PER_DAY) {
+    throw new Error(`Not enough images in the pool for ${date}`);
+  }
   const images = shuffle<SourceImage>([...ai, ...real]);
 
   const rows: DailyImageRow[] = [];

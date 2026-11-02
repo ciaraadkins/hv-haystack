@@ -1,34 +1,41 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import ImageGuess from "@/components/ImageGuess";
-import ProgressBar from "@/components/ProgressBar";
+import FlagIcon from "@/components/FlagIcon";
+import ImageGallery from "@/components/ImageGallery";
 import Results from "@/components/Results";
-import { formatDate, getPlayerId, loadResult, localDate, saveResult } from "@/lib/browser";
+import { getPlayerId, loadResult, localDate, saveResult } from "@/lib/browser";
 import { APP_NAME } from "@/lib/config";
-import type { DailyImage, Guess, PlayResult } from "@/types";
+import type { DailyImage, PlayResult } from "@/types";
 
 type State =
   | { screen: "loading" }
   | { screen: "error"; message: string }
-  | { screen: "intro" }
-  | { screen: "playing"; index: number }
+  | { screen: "playing" }
   | { screen: "submitting" }
   | { screen: "results"; result: PlayResult };
-
-type GuessRecord = { imageId: string; guess: Guess; timeMs: number };
 
 export default function Home() {
   const [state, setState] = useState<State>({ screen: "loading" });
   const [date, setDate] = useState("");
   const [images, setImages] = useState<DailyImage[]>([]);
-  const guesses = useRef<GuessRecord[]>([]);
+  const [active, setActive] = useState(0);
+  const [flagged, setFlagged] = useState<number | null>(null);
+
+  // How long the player looks at each image before picking (research data).
+  const viewTimes = useRef<Record<string, number>>({});
+  const viewing = useRef<{ id: string; since: number } | null>(null);
   const startedAt = useRef("");
-  const shownAt = useRef(0);
 
   useEffect(() => {
     const today = localDate();
     setDate(today);
+
+    const saved = loadResult(today);
+    if (saved) {
+      setState({ screen: "results", result: saved });
+      return;
+    }
 
     fetch(`/api/daily?date=${today}`)
       .then(async (res) => {
@@ -38,32 +45,29 @@ export default function Home() {
       })
       .then((imgs) => {
         setImages(imgs);
-        // Preload so each image appears instantly after a guess.
-        imgs.forEach((img) => (new Image().src = img.url));
-        const saved = loadResult(today);
-        setState(saved ? { screen: "results", result: saved } : { screen: "intro" });
+        startedAt.current = new Date().toISOString();
+        setState({ screen: "playing" });
       })
       .catch((err: Error) => setState({ screen: "error", message: err.message }));
   }, []);
 
-  function start() {
-    guesses.current = [];
-    startedAt.current = new Date().toISOString();
-    shownAt.current = performance.now();
-    setState({ screen: "playing", index: 0 });
+  // Add up time spent on each image as the player moves between them.
+  useEffect(() => {
+    if (state.screen !== "playing" || !images[active]) return;
+    const now = performance.now();
+    const prev = viewing.current;
+    if (prev) viewTimes.current[prev.id] = (viewTimes.current[prev.id] ?? 0) + (now - prev.since);
+    viewing.current = { id: images[active].id, since: now };
+  }, [active, images, state.screen]);
+
+  function toggleFlag(i: number) {
+    setFlagged((f) => (f === i ? null : i));
   }
 
-  async function guess(index: number, value: Guess) {
-    // Ignore a double tap that lands before the next image renders.
-    if (guesses.current.length !== index) return;
-    const now = performance.now();
-    guesses.current.push({ imageId: images[index].id, guess: value, timeMs: now - shownAt.current });
-    shownAt.current = now;
-
-    if (index + 1 < images.length) {
-      setState({ screen: "playing", index: index + 1 });
-      return;
-    }
+  async function submit() {
+    if (flagged === null) return;
+    const prev = viewing.current;
+    if (prev) viewTimes.current[prev.id] = (viewTimes.current[prev.id] ?? 0) + (performance.now() - prev.since);
 
     setState({ screen: "submitting" });
     try {
@@ -74,11 +78,12 @@ export default function Home() {
           playerId: getPlayerId(),
           date,
           startedAt: startedAt.current,
-          guesses: guesses.current,
+          pickedImageId: images[flagged].id,
+          viewTimes: viewTimes.current,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Couldn't save your result.");
+      if (!res.ok) throw new Error(data.error ?? "Couldn't save your answer.");
       saveResult(data as PlayResult);
       setState({ screen: "results", result: data as PlayResult });
     } catch (err) {
@@ -88,7 +93,7 @@ export default function Home() {
 
   switch (state.screen) {
     case "loading":
-      return <p className="muted">Loading today's images…</p>;
+      return <p className="muted">Loading today&apos;s images…</p>;
 
     case "error":
       return (
@@ -100,46 +105,54 @@ export default function Home() {
         </>
       );
 
-    case "intro":
-      return (
-        <>
-          <h1>{APP_NAME}</h1>
-          <p className="muted">{formatDate(date)}</p>
-          <p>
-            {images.length} images. Some are real photos, some are AI.
-            <br />
-            Can you tell which is which?
-          </p>
-          <div className="stack">
-            <button className="btn btn-primary" onClick={start}>
-              Start
-            </button>
-          </div>
-        </>
-      );
-
-    case "playing":
-      return (
-        <>
-          <ProgressBar answered={state.index} total={images.length} />
-          <ImageGuess
-            image={images[state.index]}
-            number={state.index + 1}
-            total={images.length}
-            onGuess={(g) => guess(state.index, g)}
-          />
-        </>
-      );
-
-    case "submitting":
-      return (
-        <>
-          <ProgressBar answered={images.length} total={images.length} />
-          <p className="muted">Checking your answers…</p>
-        </>
-      );
-
     case "results":
       return <Results result={state.result} />;
+
+    case "playing":
+    case "submitting":
+      return (
+        <div className="game">
+          <header className="game-header">
+            <h1>{APP_NAME}</h1>
+            <p className="muted">Four of these are real photos. One was made by AI. Flag it.</p>
+          </header>
+
+          <ImageGallery
+            images={images}
+            active={active}
+            onActiveChange={setActive}
+            slideClass={(i) => (flagged === i ? "flagged-tint" : "")}
+            thumbClass={(i) => (flagged === i ? "flagged" : "")}
+            overlay={(i) => (
+              <>
+                <button
+                  className="flag-button"
+                  aria-pressed={flagged === i}
+                  aria-label={flagged === i ? "Remove flag" : "Flag this image as AI"}
+                  onClick={() => toggleFlag(i)}
+                >
+                  <FlagIcon />
+                </button>
+                {flagged === i && (
+                  <div className="confirm">
+                    <div className="confirm-card">
+                      <p className="confirm-title">Is this the imposter?</p>
+                      <p className="muted small">You only get one guess a day.</p>
+                      <button className="btn btn-danger" onClick={submit} disabled={state.screen === "submitting"}>
+                        {state.screen === "submitting" ? "Checking…" : "Yep, that's the AI"}
+                      </button>
+                      <button className="btn-quiet" onClick={() => setFlagged(null)}>
+                        Let me look again
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          />
+
+          <p className="muted small">Swipe or tap the thumbnails to look closer.</p>
+        </div>
+      );
   }
 }

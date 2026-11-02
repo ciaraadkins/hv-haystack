@@ -42,13 +42,18 @@ CREATE TABLE IF NOT EXISTS plays (
   player_id     UUID NOT NULL,            -- anonymous ID from localStorage
   date          TEXT NOT NULL,
   is_first_play BOOLEAN NOT NULL,         -- false for replays of the same date
-  score         SMALLINT NOT NULL,
+  score         SMALLINT NOT NULL,        -- v1: right answers out of 5; v2: 1 if they found the AI image
   user_agent    TEXT,
   started_at    TIMESTAMPTZ,
   completed_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS plays_player_date ON plays (player_id, date);
+-- Game version 2 ("find the AI image"): one pick per play, no per-image guesses.
+ALTER TABLE plays ADD COLUMN IF NOT EXISTS game_version SMALLINT NOT NULL DEFAULT 1;
+ALTER TABLE plays ADD COLUMN IF NOT EXISTS picked_image_id UUID REFERENCES daily_images(id);
+ALTER TABLE plays ADD COLUMN IF NOT EXISTS view_times_ms JSONB;  -- { imageId: ms looked at }
 
+-- Game version 1 only (one AI/Human guess per image). Kept for history.
 CREATE TABLE IF NOT EXISTS guesses (
   play_id  UUID NOT NULL REFERENCES plays(id),
   image_id UUID NOT NULL REFERENCES daily_images(id),

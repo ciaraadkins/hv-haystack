@@ -8,7 +8,7 @@ const ptSerif = PT_Serif({ subsets: ["latin"], weight: ["400", "700"], variable:
 
 export const metadata: Metadata = {
   title: APP_NAME,
-  description: "Five images. Some are real, some are AI. Can you tell?",
+  description: "Five images. Four are real photos, one was made by AI. Can you find it?",
 };
 
 export const viewport: Viewport = {

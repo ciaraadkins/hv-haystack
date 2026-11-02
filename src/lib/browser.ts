@@ -1,8 +1,9 @@
 // Browser-only helpers: anonymous player ID, local date, saved results.
 import type { PlayResult } from "@/types";
 
-const PLAYER_KEY = "aiornot:playerId";
-const resultKey = (date: string) => `aiornot:result:${date}`;
+const PLAYER_KEY = "haystack:playerId";
+// "v2": results from the find-the-AI game (an old per-image result would not render).
+const resultKey = (date: string) => `haystack:v2:result:${date}`;
 
 // localStorage can throw (private mode, blocked storage); the game still works without it.
 function storageGet(key: string): string | null {

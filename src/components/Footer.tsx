@@ -1,6 +1,5 @@
 import Link from "next/link";
-
-const UTM = "utm_source=ai_or_not&utm_medium=referral";
+import { UTM } from "@/lib/config";
 
 export default function Footer() {
   return (

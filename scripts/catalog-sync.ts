@@ -46,7 +46,7 @@ function print({ report: r, added, uploaded }: SyncResult) {
   console.log(`Catalog: ${CATALOG_PATH} → ${remote ? "production (S3 + RDS)" : "local"}`);
   for (const source of SOURCES) {
     const s = r.sources[source];
-    const low = s.lowStock ? "  ← running low, aim for 14+ unused" : "";
+    const low = s.lowStock ? "  ← running low" : "";
     console.log(`  ${source.padEnd(9)} ${s.active} active, ${s.unused} not used yet${low}`);
   }
   if (added.length) console.log(`  Added ${added.length} new file(s) to the CSV: ${added.join(", ")}`);

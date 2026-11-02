@@ -101,177 +101,31 @@ p {
   width: 100%;
 }
 
-/* Progress */
-.progress {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+/* ── Game + results: a main image you can swipe, with a thumbnail strip below ── */
+.game {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.game-header {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  width: 100%;
 }
 
-.progress span {
-  height: 6px;
-  border-radius: 3px;
-  background: #e5e5e5;
-}
-
-.progress span.done {
-  background: #000;
-}
-
-/* Game image: always 4:5, and short enough that the buttons stay on screen. */
-.guess-image {
-  width: min(100%, calc((100svh - 260px) * 0.8));
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  border-radius: 8px;
-  background: #f2f2f2;
-  display: block;
-}
-
-/* Results: summary + carousel, side by side on wide screens. */
-.page:has(.results) {
-  max-width: 960px;
-}
-
-.results {
+.gallery {
+  /* Same size on every screen: as wide as the column, short enough that the strip fits below. */
+  width: min(100%, calc((100svh - 300px) * 0.8));
+  min-width: min(100%, 260px);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 40px;
-  width: 100%;
+  gap: 10px;
 }
 
-.results-summary {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  width: 100%;
-  max-width: 400px;
-}
-
-/* Date and score side by side: big value, small gray label underneath. */
-.stats {
-  display: flex;
-  justify-content: center;
-  gap: 64px;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.stat-value {
-  font-size: 1.75rem;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  color: #777;
-}
-
-/* The five images in a row; tap one to show it in the carousel. */
-.thumbs {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  width: 100%;
-}
-
-.thumb {
-  font: inherit;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  color: #000;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.thumb img {
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  border-radius: 6px;
-  display: block;
-  outline: 1.5px solid transparent;
-  outline-offset: 2px;
-  transition: outline-color 0.15s;
-}
-
-.thumb .label {
-  font-size: 0.8rem;
-}
-
-/* Only the selected thumbnail is at full strength; the rest fade back. */
-.thumb img,
-.thumb .label {
-  opacity: 0.5;
-  transition: opacity 0.15s;
-}
-
-.thumb.active img,
-.thumb.active .label {
-  opacity: 1;
-}
-
-@media (hover: hover) {
-  .thumb:hover img,
-  .thumb:hover .label {
-    opacity: 0.8;
-  }
-
-  .thumb.active:hover img,
-  .thumb.active:hover .label {
-    opacity: 1;
-  }
-}
-
-/* "AI" / "Human" followed by a check or X. */
-.label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-}
-
-.mark {
-  width: 0.95em;
-  height: 0.95em;
-  flex-shrink: 0;
-}
-
-.mark-right {
-  color: #2e7d32;
-}
-
-.mark-missed {
-  color: #c62828;
-}
-
-.thumb.active img {
-  outline-color: #000;
-}
-
-/* Carousel: same size as the game image, swipeable. */
-.results-carousel {
-  width: min(100%, calc((100svh - 260px) * 0.8));
-  min-width: min(100%, 280px);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.carousel-track {
+.gallery-track {
   display: flex;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -279,41 +133,229 @@ p {
   border-radius: 8px;
 }
 
-.carousel-track::-webkit-scrollbar {
+.gallery-track::-webkit-scrollbar,
+.gallery-strip::-webkit-scrollbar {
   display: none;
 }
 
-.carousel-track img {
+.gallery-slide {
+  position: relative;
   flex: 0 0 100%;
-  width: 100%;
   aspect-ratio: 4 / 5;
-  object-fit: cover;
   scroll-snap-align: start;
   background: #f2f2f2;
+}
+
+.gallery-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
-.carousel-caption {
+/* About four thumbnails in view; the strip scrolls sideways for the rest. */
+.gallery-strip {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 3px;
 }
 
-.answer {
+.gallery-thumb {
+  font: inherit;
+  flex: 0 0 calc((100% - 3 * 8px) / 4.25);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gallery-thumb-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color 0.15s;
+}
+
+.gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+/* Only the image in view is at full strength; the rest fade back. */
+.gallery-thumb-frame,
+.gallery-thumb-label {
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.gallery-thumb.active .gallery-thumb-frame,
+.gallery-thumb.active .gallery-thumb-label {
+  opacity: 1;
+}
+
+.gallery-thumb.active .gallery-thumb-frame {
+  outline-color: #000;
+}
+
+@media (hover: hover) {
+  .gallery-thumb:not(.active):hover .gallery-thumb-frame,
+  .gallery-thumb:not(.active):hover .gallery-thumb-label {
+    opacity: 0.8;
+  }
+}
+
+.gallery-thumb-label {
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* ── The red flag: marks the image the player thinks is AI ── */
+.flag-icon {
+  width: 1em;
+  height: 1em;
+  color: #d32f2f;
+  flex-shrink: 0;
+}
+
+.flag-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  font-size: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 2;
+}
+
+.flag-button[aria-pressed="true"] {
+  background: #d32f2f;
+}
+
+.flag-button[aria-pressed="true"] .flag-icon {
+  color: #fff;
+}
+
+/* Red tint on a flagged image, in the main view and its thumbnail. */
+.flagged-tint::after,
+.gallery-thumb.flagged .gallery-thumb-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(211, 47, 47, 0.42);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.gallery-thumb.flagged .gallery-thumb-frame,
+.gallery-thumb.flagged .gallery-thumb-label {
+  opacity: 1;
+}
+
+/* "Is this the imposter?" confirmation, on top of the tinted image. */
+.confirm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  z-index: 1;
+}
+
+.confirm-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  width: min(100%, 300px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-title {
   font-size: 1.25rem;
 }
 
-@media (min-width: 860px) {
-  .results {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 64px;
-  }
+.btn-danger {
+  background: #d32f2f;
+  border-color: #d32f2f;
+  color: #fff;
+}
 
-  .results-carousel {
-    order: -1;
-  }
+.btn-danger:active {
+  background: #b71c1c;
+}
+
+.btn-quiet {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 6px;
+  color: #555;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── Results ── */
+.verdict {
+  font-size: 1.5rem;
+}
+
+.slide-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.gallery-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.caption-label {
+  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 /* Local-only catalog admin (/admin): wider, left-aligned. */

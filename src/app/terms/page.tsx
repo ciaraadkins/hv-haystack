@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { APP_NAME, CONTACT_EMAIL, LEGAL_UPDATED } from "@/lib/config";
+import { APP_NAME, CONTACT_EMAIL, LEGAL_UPDATED, UTM } from "@/lib/config";
 
 export const metadata: Metadata = { title: `Terms · ${APP_NAME}` };
 
@@ -16,9 +16,10 @@ export default function TermsPage() {
 
       <h2>The game</h2>
       <p>
-        {APP_NAME} is a free daily game: look at five images and guess which are real photos and which were made by
-        AI. It&apos;s for fun and for learning. Scores aren&apos;t a judgment of anyone&apos;s skill, and we may change
-        or stop the game at any time.
+        {APP_NAME} is a free daily game: each day you see five images. Four are real photos by human photographers and
+        one was made by AI. Your job is to find the AI image; you get one guess a day. It&apos;s for fun and for
+        learning, and a way to celebrate human-made work. Results aren&apos;t a judgment of anyone&apos;s skill, and
+        we may change or stop the game at any time.
       </p>
 
       <h2>Your gameplay data</h2>
@@ -31,7 +32,7 @@ export default function TermsPage() {
       <h2>The images</h2>
       <p>
         We pick every image by hand. Real photos are by photographers on{" "}
-        <a href="https://unsplash.com/?utm_source=ai_or_not&utm_medium=referral" target="_blank" rel="noreferrer">
+        <a href={`https://unsplash.com/?${UTM}`} target="_blank" rel="noreferrer">
           Unsplash
         </a>
         , used under the{" "}

@@ -18,7 +18,8 @@ export const CATALOG_COLUMNS = [
   "notes",
 ];
 export const IMAGE_EXT = /\.(png|jpe?g|webp)$/i;
-const LOW_STOCK = 14; // about a week's worth of each source
+// About a week's worth: each day uses 1 Lummi (AI) image and 4 Unsplash (real) photos.
+const LOW_STOCK: Record<Source, number> = { lummi: 7, unsplash: 28 };
 
 export type CatalogRow = Record<string, string>;
 
@@ -71,7 +72,7 @@ export async function applyCatalog(rows: CatalogRow[], available: Set<string>): 
     SOURCES.map((source) => {
       const images = pool.filter((img) => img.source === source);
       const unused = images.filter((img) => img.times_used === 0).length;
-      return [source, { active: images.length, unused, lowStock: unused < LOW_STOCK }];
+      return [source, { active: images.length, unused, lowStock: unused < LOW_STOCK[source] }];
     }),
   ) as Record<Source, SourceReport>;
 
