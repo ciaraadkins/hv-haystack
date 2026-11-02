@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bungee, Cormorant } from "next/font/google";
 import Footer from "@/components/Footer";
+import SiteHeader from "@/components/SiteHeader";
 import { APP_NAME } from "@/lib/config";
 import "./globals.css";
 
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${cormorant.variable} ${bungee.variable}`}>
       <body>
+        <SiteHeader />
         <main className="page">{children}</main>
         <Footer />
       </body>
