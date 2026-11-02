@@ -82,7 +82,9 @@ export default function TermsPage() {
       {CONTACT_EMAIL && (
         <>
           <h2>Contact</h2>
-          <p>{CONTACT_EMAIL}</p>
+          <p>
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </p>
         </>
       )}
 

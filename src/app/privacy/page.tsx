@@ -85,7 +85,9 @@ export default function PrivacyPage() {
       {CONTACT_EMAIL && (
         <>
           <h2>Contact</h2>
-          <p>Questions or deletion requests: {CONTACT_EMAIL}</p>
+          <p>
+            Questions or deletion requests: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </p>
         </>
       )}
 
