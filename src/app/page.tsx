@@ -5,7 +5,6 @@ import FlagIcon from "@/components/FlagIcon";
 import ImageGallery from "@/components/ImageGallery";
 import Results from "@/components/Results";
 import { getPlayerId, loadResult, localDate, saveResult } from "@/lib/browser";
-import { APP_NAME } from "@/lib/config";
 import type { DailyImage, PlayResult } from "@/types";
 
 type State =
@@ -113,7 +112,6 @@ export default function Home() {
       return (
         <div className="game">
           <header className="game-header">
-            <h1 className="brand-title">{APP_NAME}</h1>
             <p className="muted">Four of these are real photos. One was made by AI. Flag it.</p>
           </header>
 

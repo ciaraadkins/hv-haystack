@@ -43,19 +43,22 @@ export default function ImageGallery({ images, active, onActiveChange, overlay, 
   }
 
   // Keep the active thumbnail in view in the strip. On first render, jump straight
-  // to the starting image instead (results open on the AI image) without moving the page.
+  // to the starting image instead (results open on the AI image).
+  // Only the strip scrolls sideways; scrollIntoView would also scroll the page down.
   const mounted = useRef(false);
   useEffect(() => {
+    const thumb = thumbs.current[active];
+    const strip = thumb?.parentElement;
+    if (!thumb || !strip) return;
+    const centered = thumb.offsetLeft - strip.offsetLeft - (strip.clientWidth - thumb.clientWidth) / 2;
     if (!mounted.current) {
       mounted.current = true;
       const el = track.current;
       if (el && active > 0) el.scrollLeft = active * el.clientWidth;
-      const strip = thumbs.current[active]?.parentElement;
-      const thumb = thumbs.current[active];
-      if (strip && thumb) strip.scrollLeft = thumb.offsetLeft - strip.offsetLeft - (strip.clientWidth - thumb.clientWidth) / 2;
+      strip.scrollLeft = centered;
       return;
     }
-    thumbs.current[active]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    strip.scrollTo({ left: centered, behavior: "smooth" });
   }, [active]);
 
   // If the gallery changes size (phone rotated, window resized), stay on the same image.

@@ -4,7 +4,7 @@ import { useState } from "react";
 import FlagIcon from "./FlagIcon";
 import ImageGallery from "./ImageGallery";
 import { formatDate } from "@/lib/browser";
-import { APP_NAME, UTM } from "@/lib/config";
+import { UTM } from "@/lib/config";
 import type { ImageResult, PlayResult } from "@/types";
 
 function Credit({ r }: { r: ImageResult }) {
@@ -50,7 +50,6 @@ export default function Results({ result }: { result: PlayResult }) {
   return (
     <div className="game">
       <header className="game-header">
-        <h1 className="brand-title">{APP_NAME}</h1>
         <p className="muted">{formatDate(result.date)}</p>
       </header>
 
