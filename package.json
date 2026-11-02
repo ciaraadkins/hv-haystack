@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "catalog:sync": "tsx --env-file=.env scripts/catalog-sync.ts",
     "catalog:sync:prod": "sst shell --stage production -- tsx scripts/catalog-sync.ts --remote",
-    "deploy": "sst deploy --stage production"
+    "deploy": "export $(grep -E '^CLOUDFLARE_' .env | xargs) && sst deploy --stage production"
   },
   "dependencies": {
     "@aws-sdk/client-lambda": "^3.1161.0",
