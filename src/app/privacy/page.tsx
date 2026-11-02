@@ -92,7 +92,7 @@ export default function PrivacyPage() {
       )}
 
       <p>
-        <Link href="/">Back to the game</Link>
+        <Link href="/haystack">Back to the game</Link>
       </p>
     </article>
   );

@@ -8,7 +8,7 @@ export default function ShareButtons({ result }: { result: PlayResult }) {
   const [copied, setCopied] = useState(false);
 
   async function share() {
-    const text = shareText(result, window.location.origin);
+    const text = shareText(result, `${window.location.origin}/haystack`);
     // Phones get the native share sheet; everything else copies to the clipboard.
     if (navigator.share && window.matchMedia("(pointer: coarse)").matches) {
       try {

@@ -140,6 +140,7 @@ p {
   font-size: min(2.75rem, 11vw);
   line-height: 1.1;
   letter-spacing: 0.02em;
+  text-decoration: none;
 }
 
 .game-header {
