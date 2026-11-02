@@ -3,7 +3,6 @@
 import { useState } from "react";
 import FlagIcon from "./FlagIcon";
 import ImageGallery from "./ImageGallery";
-import ShareButtons from "./ShareButtons";
 import { formatDate } from "@/lib/browser";
 import { APP_NAME, UTM } from "@/lib/config";
 import type { ImageResult, PlayResult } from "@/types";
@@ -55,7 +54,7 @@ export default function Results({ result }: { result: PlayResult }) {
         <p className="muted">{formatDate(result.date)}</p>
       </header>
 
-      <p className="verdict">{correct ? "You found it." : "Better luck next time."}</p>
+      <p className="verdict">{correct ? "You found it." : "Better luck next time!"}</p>
 
       <ImageGallery
         images={images.map((r) => ({ id: r.imageId, url: r.url }))}
@@ -94,7 +93,7 @@ export default function Results({ result }: { result: PlayResult }) {
         )}
       />
 
-      <ShareButtons result={result} />
+      {/* Sharing is hidden for now; ShareButtons (and lib/share.ts) are ready to bring back. */}
       <p className="muted small">Come back tomorrow for a new haystack :)</p>
     </div>
   );
