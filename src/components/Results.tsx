@@ -50,7 +50,7 @@ export default function Results({ result }: { result: PlayResult }) {
   return (
     <div className="game">
       <header className="game-header">
-        <h1>{APP_NAME}</h1>
+        <h1 className="brand-title">{APP_NAME}</h1>
         <p className="muted">{formatDate(result.date)}</p>
       </header>
 

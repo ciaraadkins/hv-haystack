@@ -113,7 +113,7 @@ export default function Home() {
       return (
         <div className="game">
           <header className="game-header">
-            <h1>{APP_NAME}</h1>
+            <h1 className="brand-title">{APP_NAME}</h1>
             <p className="muted">Four of these are real photos. One was made by AI. Flag it.</p>
           </header>
 
